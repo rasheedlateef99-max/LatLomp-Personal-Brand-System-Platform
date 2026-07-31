@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ADMIN & AUTH
+// ─────────────────────────────────────────────
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// PROFILE (single record, homepage/about content)
+// ─────────────────────────────────────────────
+
+model Profile {
+  id            String      @id @default(cuid())
+  name          String
+  headline      String
+  shortBio      String
+  email         String
+  githubUrl     String
+  linkedinUrl   String
+  resumeAssetId String?     @unique
+  resumeAsset   MediaAsset? @relation("ProfileResume", fields: [resumeAssetId], references: [id])
+  updatedAt     DateTime    @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// PROJECTS
+// ─────────────────────────────────────────────
+
+enum ProjectStatus {
+  COMPLETED
+  IN_PROGRESS
+  PLANNED
+}
+
+model ProjectCategory {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  projects Project[]
+}
+
+model Project {
+  id                 String          @id @default(cuid())
+  slug               String          @unique
+  title              String
+  description        String
+  techStack          String[]
+  status             ProjectStatus   @default(PLANNED)
+  liveUrl            String?
+  githubUrl          String?
+  featured           Boolean         @default(false)
+  overview           String
+  problem            String
+  solution           String
+  features           String[]
+  lessonsLearned     String
+  futureImprovements String
+  categoryId         String
+  category           ProjectCategory @relation(fields: [categoryId], references: [id])
+  images             ProjectImage[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+}
+
+model ProjectImage {
+  id           String     @id @default(cuid())
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaAssetId String
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id])
+  order        Int        @default(0)
+}
+
+// ─────────────────────────────────────────────
+// SKILLS
+// ─────────────────────────────────────────────
+
+enum SkillCategory {
+  FRONTEND
+  BACKEND
+  DATABASE
+  PROGRAMMING_LANGUAGES
+  TOOLS
+}
+
+model Skill {
+  id       String        @id @default(cuid())
+  name     String
+  category SkillCategory
+  order    Int           @default(0)
+}
+
+// ─────────────────────────────────────────────
+// MEDIA (uploaded files — resume, project images, etc.)
+// ─────────────────────────────────────────────
+
+model MediaAsset {
+  id            String         @id @default(cuid())
+  filename      String
+  url           String
+  type          String
+  size          Int
+  uploadedAt    DateTime       @default(now())
+  profile       Profile?       @relation("ProfileResume")
+  projectImages ProjectImage[]
+}
+
+// ─────────────────────────────────────────────
+// CONTACT
+// ─────────────────────────────────────────────
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// POST-MVP ENTITIES (schema now, features later)
+// ─────────────────────────────────────────────
+
+model Certificate {
+  id           String   @id @default(cuid())
+  title        String
+  issuer       String
+  dateIssued   DateTime
+  url          String?
+  mediaAssetId String?
+  createdAt    DateTime @default(now())
+}
+
+model Service {
+  id          String  @id @default(cuid())
+  title       String
+  description String
+  priceNote   String?
+  order       Int     @default(0)
+}
+
+model Testimonial {
+  id           String  @id @default(cuid())
+  authorName   String
+  authorRole   String
+  quote        String
+  mediaAssetId String?
+  order        Int     @default(0)
+}
+
+model BlogPost {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  title        String
+  excerpt      String
+  contentMd    String
+  status       String    @default("draft")
+  publishedAt  DateTime?
+  coverImageId String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// SITE SETTINGS (generic key/value)
+// ─────────────────────────────────────────────
+
+model SiteSetting {
+  key   String @id
+  value String
+}
